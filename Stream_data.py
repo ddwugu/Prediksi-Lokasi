@@ -1,32 +1,33 @@
-import pickle
 import streamlit as st
 
-try:
-    # Load the model
-    LokasiKM = pickle.load(open('Pred_lokasi.sav', 'rb'))
-except Exception as e:
-    st.error(f"Error loading the model: {e}")
 
-# Web Title
-st.title('Pertamina Field Jambi')
+def predict_location(x1, x2):
+    y = -38.01 - 0.18 * x1 + 1.02 * x2
+    return y
 
-# User Inputs
-Titik_1_PSI = st.text_input('Input Pressure di titik 1 (PSI)')
-Titik_2_PSI = st.text_input('Input Pressure di titik 2 (PSI)')
+# Main Streamlit app
+def main():
+    st.title('Pertamina Field Jambi')
+    st.subheader('Prediksi Lokasi Kebocoran Line BJG-TPN Regresi Model')
 
-# Prediction Code
-suspect_loct = ''
+    Titik_1_PSI = st.text_input('Input Pressure di titik 1 (PSI)')
+    Titik_2_PSI = st.text_input('Input Pressure di titik 2 (PSI)')
 
-# Prediction Button
-if st.button('Prediksi Lokasi'):
-    try:
-        prediksi_lokasi = LokasiKM.predict([[float(Titik_1_PSI), float(Titik_2_PSI)]])
-        if prediksi_lokasi[0] == 0:
-            suspect_loct = 'Pipa Aman'
-        elif prediksi_lokasi[0] == 26.8:
-            suspect_loct = 'Tidak Terdapat Fluida yang Mengalir'
-        else:
-            suspect_loct = f'Terjadi di titik {prediksi_lokasi[0]} KM'
-        st.success(suspect_loct)
-    except Exception as e:
-        st.error(f"Error predicting location: {e}")
+    if st.button('Prediksi Lokasi'):
+        try:
+            x1 = float(Titik_1_PSI)
+            x2 = float(Titik_2_PSI)
+            prediksi_lokasi = predict_location(x1, x2)
+            
+            if prediksi_lokasi <= 0: # titik nol
+                suspect_loct = 'It is safe that there is no fluid flowing'
+            elif prediksi_lokasi >= 26.38: # total panjang trunkline
+                suspect_loct = 'Safe, there are no leaks'
+            else:
+                suspect_loct = f'!!!estimated leak location {prediksi_lokasi} KM'
+            st.success(suspect_loct)
+        except Exception as e:
+            st.error(f"Error predicting location: {e}")
+
+if __name__ == "__main__":
+    main()
